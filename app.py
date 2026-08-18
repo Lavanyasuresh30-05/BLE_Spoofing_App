@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 
 # -------------------------------------------------
@@ -17,6 +18,7 @@ st.set_page_config(
 @st.cache_resource
 def load_model():
     return joblib.load("Phase4_XGBoost_Model.pkl")
+
 
 model = load_model()
 
@@ -112,7 +114,8 @@ elif page == "BLE Spoofing Detection":
         "used by the Phase 4 XGBoost model."
     )
 
-    required_features = [
+    # These are the columns expected in the UPLOADED CSV.
+    input_features = [
         "Timestamp_ms",
         "RSSI_dBm",
         "RSSI_Temporal_Variance",
@@ -124,8 +127,21 @@ elif page == "BLE Spoofing Detection":
         "TxPower_dBm"
     ]
 
-    st.subheader("Required BLE Features")
-    st.write(required_features)
+    # These are the FINAL features used by the Phase 4 model.
+    model_features = [
+        "RSSI_dBm",
+        "RSSI_Temporal_Variance",
+        "Advertising_Interval_ms",
+        "Channel",
+        "Channel_Transition",
+        "CONNECT_REQ_Timing_ms",
+        "Packet_Length_bytes",
+        "TxPower_dBm",
+        "Timestamp_relative_ms"
+    ]
+
+    st.subheader("Required BLE CSV Features")
+    st.write(input_features)
 
     uploaded_file = st.file_uploader(
         "Upload BLE CSV Dataset",
@@ -145,9 +161,12 @@ elif page == "BLE Spoofing Detection":
 
         st.dataframe(df.head())
 
+        # -------------------------------------------------
+        # CHECK REQUIRED INPUT COLUMNS
+        # -------------------------------------------------
         missing_features = [
             feature
-            for feature in required_features
+            for feature in input_features
             if feature not in df.columns
         ]
 
@@ -160,42 +179,114 @@ elif page == "BLE Spoofing Detection":
 
         else:
 
-            X_input = df[required_features].copy()
+            # -------------------------------------------------
+            # CREATE MODEL INPUT
+            # -------------------------------------------------
+            X_input = df[input_features].copy()
 
-            # Convert features to numbers
-            for column in required_features:
-
-                X_input[column] = pd.to_numeric(
-                    X_input[column],
+            # -------------------------------------------------
+            # PHASE 4 TIMESTAMP PREPROCESSING
+            # Same as the training notebook:
+            #
+            # Timestamp_relative_ms =
+            # Timestamp_ms - minimum Timestamp_ms
+            # -------------------------------------------------
+            X_input["Timestamp_relative_ms"] = (
+                pd.to_numeric(
+                    X_input["Timestamp_ms"],
                     errors="coerce"
                 )
+                - pd.to_numeric(
+                    X_input["Timestamp_ms"],
+                    errors="coerce"
+                ).min()
+            )
 
-            # Check for invalid values
-                
+            # Remove original Timestamp_ms
+            X_input = X_input.drop(
+                columns=["Timestamp_ms"]
+            )
+
+            # -------------------------------------------------
+            # CONVERT ALL FEATURES TO NUMERIC
+            # Same as Phase 4 training
+            # -------------------------------------------------
+            X_input = X_input.apply(
+                pd.to_numeric,
+                errors="coerce"
+            )
+
+            # -------------------------------------------------
+            # REPLACE INFINITY WITH NaN
+            # -------------------------------------------------
+            X_input = X_input.replace(
+                [np.inf, -np.inf],
+                np.nan
+            )
+
+            # -------------------------------------------------
+            # MEDIAN IMPUTATION
+            # Same preprocessing used during Phase 4 training
+            # -------------------------------------------------
+            X_input = X_input.fillna(
+                X_input.median()
+            )
+
+            # -------------------------------------------------
+            # FORCE EXACT MODEL FEATURE ORDER
+            # -------------------------------------------------
+            X_input = X_input[model_features]
+
+            # -------------------------------------------------
+            # DEBUG INFORMATION
+            # -------------------------------------------------
+            st.subheader("Processed Model Input")
+
+            st.write(
+                "The CSV has been preprocessed using the "
+                "same feature transformation used during Phase 4 training."
+            )
+
+            st.write("Final model features:")
+
+            st.write(
+                model_features
+            )
+
+            st.write("Data types:")
+
+            st.write(
+                X_input.dtypes
+            )
+
+            st.write("Remaining missing values:")
+
+            st.write(
+                X_input.isnull().sum()
+            )
+
+            # -------------------------------------------------
+            # CHECK FOR REMAINING INVALID VALUES
+            # -------------------------------------------------
             if X_input.isnull().any().any():
 
                 st.error(
-                    "Some feature values are missing "
-                    "or are not numeric."
-                )
-
-                st.write(
-                    "Missing or non-numeric values by column:"
+                    "Some feature values are still missing "
+                    "after Phase 4 preprocessing."
                 )
 
                 st.write(
                     X_input.isnull().sum()
                 )
 
-                st.write("Data types:")
+                st.stop()
 
-                st.write(
-                    X_input.dtypes
-                )
+            # -------------------------------------------------
+            # DETECTION BUTTON
+            # -------------------------------------------------
+            if st.button("🚀 Detect BLE Spoofing"):
 
-            else:
-
-                if st.button("🚀 Detect BLE Spoofing"):
+                try:
 
                     predictions = model.predict(
                         X_input
@@ -205,12 +296,44 @@ elif page == "BLE Spoofing Detection":
                         model.predict_proba(X_input)
                     )
 
+                    # -------------------------------------------------
+                    # FIND PROBABILITY OF CLASS 1
+                    # -------------------------------------------------
+                    if hasattr(model, "classes_"):
+
+                        classes = list(
+                            model.classes_
+                        )
+
+                        if 1 in classes:
+
+                            class_1_index = classes.index(1)
+
+                            spoofing_probability = (
+                                probabilities[:, class_1_index]
+                            )
+
+                        else:
+
+                            spoofing_probability = (
+                                probabilities[:, -1]
+                            )
+
+                    else:
+
+                        spoofing_probability = (
+                            probabilities[:, 1]
+                        )
+
+                    # -------------------------------------------------
+                    # RESULTS
+                    # -------------------------------------------------
                     result = df.copy()
 
                     result["Prediction"] = predictions
 
                     result["Spoofing_Probability"] = (
-                        probabilities[:, 1]
+                        spoofing_probability
                     )
 
                     st.subheader(
@@ -241,10 +364,20 @@ elif page == "BLE Spoofing Detection":
                             spoofed_count
                         )
 
-                    st.dataframe(result)
+                    st.dataframe(
+                        result,
+                        use_container_width=True
+                    )
 
                     st.success(
                         "BLE spoofing detection "
                         "completed successfully! ✅"
                     )
-            
+
+                except Exception as e:
+
+                    st.error(
+                        "Prediction failed."
+                    )
+
+                    st.exception(e)
