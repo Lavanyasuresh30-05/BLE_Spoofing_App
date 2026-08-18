@@ -125,7 +125,6 @@ elif page == "BLE Spoofing Detection":
     ]
 
     st.subheader("Required BLE Features")
-
     st.write(required_features)
 
     uploaded_file = st.file_uploader(
@@ -163,101 +162,77 @@ elif page == "BLE Spoofing Detection":
 
             X_input = df[required_features].copy()
 
-# Convert all model input features to numeric values
-for column in required_features:
-    X_input[column] = pd.to_numeric(
-        X_input[column],
-        errors="coerce"
-    )
+            # Convert features to numbers
+            for column in required_features:
 
-# Check for missing/non-numeric values
-if X_input.isnull().any().any():
-
-    st.error(
-        "Some BLE feature values are missing or are not numeric."
-    )
-
-    st.write("Missing values by column:")
-    st.write(X_input.isnull().sum())
-
-else:
-
-    if st.button("🚀 Detect BLE Spoofing"):
-
-        predictions = model.predict(X_input)
-
-        probabilities = model.predict_proba(X_input)
-
-        result = df.copy()
-
-        result["Prediction"] = predictions
-
-        result["Spoofing_Probability"] = probabilities[:, 1]
-
-        st.subheader("Detection Results")
-
-        normal_count = int(
-            (predictions == 0).sum()
-        )
-
-        spoofed_count = int(
-            (predictions == 1).sum()
-        )
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric(
-                "Normal Packets",
-                normal_count
-            )
-
-        with col2:
-            st.metric(
-                "Spoofed Packets",
-                spoofed_count
-            )
-
-        st.dataframe(result)
-
-        st.success(
-            "BLE spoofing detection completed successfully! ✅"
-        )
-
-                probabilities = model.predict_proba(X_input)
-
-                result = df.copy()
-
-                result["Prediction"] = predictions
-
-                result["Spoofing_Probability"] = probabilities[:, 1]
-
-                st.subheader("Detection Results")
-
-                normal_count = int(
-                    (predictions == 0).sum()
+                X_input[column] = pd.to_numeric(
+                    X_input[column],
+                    errors="coerce"
                 )
 
-                spoofed_count = int(
-                    (predictions == 1).sum()
+            # Check for invalid values
+            if X_input.isnull().any().any():
+
+                st.error(
+                    "Some feature values are missing "
+                    "or are not numeric."
                 )
 
-                col1, col2 = st.columns(2)
+                st.write(
+                    X_input.isnull().sum()
+                )
 
-                with col1:
-                    st.metric(
-                        "Normal Packets",
-                        normal_count
+            else:
+
+                if st.button("🚀 Detect BLE Spoofing"):
+
+                    predictions = model.predict(
+                        X_input
                     )
 
-                with col2:
-                    st.metric(
-                        "Spoofed Packets",
-                        spoofed_count
+                    probabilities = (
+                        model.predict_proba(X_input)
                     )
 
-                st.dataframe(result)
+                    result = df.copy()
 
-                st.success(
-                    "BLE spoofing detection completed successfully! ✅"
-                )
+                    result["Prediction"] = predictions
+
+                    result["Spoofing_Probability"] = (
+                        probabilities[:, 1]
+                    )
+
+                    st.subheader(
+                        "Detection Results"
+                    )
+
+                    normal_count = int(
+                        (predictions == 0).sum()
+                    )
+
+                    spoofed_count = int(
+                        (predictions == 1).sum()
+                    )
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+
+                        st.metric(
+                            "Normal Packets",
+                            normal_count
+                        )
+
+                    with col2:
+
+                        st.metric(
+                            "Spoofed Packets",
+                            spoofed_count
+                        )
+
+                    st.dataframe(result)
+
+                    st.success(
+                        "BLE spoofing detection "
+                        "completed successfully! ✅"
+                    )
