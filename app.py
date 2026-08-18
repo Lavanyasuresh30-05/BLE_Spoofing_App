@@ -236,29 +236,7 @@ elif page == "BLE Spoofing Detection":
             # FORCE EXACT MODEL FEATURE ORDER
             # -------------------------------------------------
             X_input = X_input[model_features]
-            st.subheader("Processed Model Input")
-
-st.write(
-    "The CSV has been preprocessed using the same "
-    "feature transformation used during Phase 4 training."
-)
-
-st.write("Final model features:")
-st.write(model_features)
-
-st.write("Data types:")
-st.write(X_input.dtypes)
-
-st.write("Missing values:")
-st.write(X_input.isnull().sum())
-
-st.info(
-    "Note: Channel_Transition is represented as missing "
-    "because the original Phase 4 training pipeline converted "
-    "values such as 37->38 to NaN. XGBoost can handle missing "
-    "feature values during prediction."
-)
-
+            
             # -------------------------------------------------
             # DEBUG INFORMATION
             # -------------------------------------------------
