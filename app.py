@@ -171,6 +171,7 @@ elif page == "BLE Spoofing Detection":
                 )
 
             # Check for invalid values
+                
             if X_input.isnull().any().any():
 
                 st.error(
@@ -179,7 +180,17 @@ elif page == "BLE Spoofing Detection":
                 )
 
                 st.write(
+                    "Missing or non-numeric values by column:"
+                )
+
+                st.write(
                     X_input.isnull().sum()
+                )
+
+                st.write("Data types:")
+
+                st.write(
+                    X_input.dtypes
                 )
 
             else:
@@ -236,3 +247,4 @@ elif page == "BLE Spoofing Detection":
                         "BLE spoofing detection "
                         "completed successfully! ✅"
                     )
+            
