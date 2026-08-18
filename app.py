@@ -161,11 +161,68 @@ elif page == "BLE Spoofing Detection":
 
         else:
 
-            X_input = df[required_features]
+            X_input = df[required_features].copy()
 
-            if st.button("🚀 Detect BLE Spoofing"):
+# Convert all model input features to numeric values
+for column in required_features:
+    X_input[column] = pd.to_numeric(
+        X_input[column],
+        errors="coerce"
+    )
 
-                predictions = model.predict(X_input)
+# Check for missing/non-numeric values
+if X_input.isnull().any().any():
+
+    st.error(
+        "Some BLE feature values are missing or are not numeric."
+    )
+
+    st.write("Missing values by column:")
+    st.write(X_input.isnull().sum())
+
+else:
+
+    if st.button("🚀 Detect BLE Spoofing"):
+
+        predictions = model.predict(X_input)
+
+        probabilities = model.predict_proba(X_input)
+
+        result = df.copy()
+
+        result["Prediction"] = predictions
+
+        result["Spoofing_Probability"] = probabilities[:, 1]
+
+        st.subheader("Detection Results")
+
+        normal_count = int(
+            (predictions == 0).sum()
+        )
+
+        spoofed_count = int(
+            (predictions == 1).sum()
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "Normal Packets",
+                normal_count
+            )
+
+        with col2:
+            st.metric(
+                "Spoofed Packets",
+                spoofed_count
+            )
+
+        st.dataframe(result)
+
+        st.success(
+            "BLE spoofing detection completed successfully! ✅"
+        )
 
                 probabilities = model.predict_proba(X_input)
 
