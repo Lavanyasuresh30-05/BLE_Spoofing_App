@@ -8,7 +8,6 @@ import joblib
 # -------------------------------------------------
 st.set_page_config(
     page_title="BLE Spoofing Detection",
-    page_icon="🔐",
     layout="wide"
 )
 
@@ -25,7 +24,7 @@ model = load_model()
 # -------------------------------------------------
 # TITLE
 # -------------------------------------------------
-st.title("🔐 BLE Spoofing Detection")
+st.title("BLE Spoofing Detection")
 st.subheader("Ultra-Lightweight Quantized XGBoost for Smartwatches")
 
 st.write(
@@ -53,7 +52,7 @@ page = st.sidebar.radio(
 # -------------------------------------------------
 if page == "Home":
 
-    st.header("🏠 Home")
+    st.header("Home")
 
     st.write(
         "Welcome to the Bluetooth Low Energy (BLE) "
@@ -65,7 +64,7 @@ if page == "Home":
         "XGBoost model for BLE classification."
     )
 
-    st.success("Phase 4 model loaded successfully ✅")
+    st.success("Phase 4 model loaded successfully")
 
 
 # -------------------------------------------------
@@ -73,7 +72,7 @@ if page == "Home":
 # -------------------------------------------------
 elif page == "Model Information":
 
-    st.header("📊 Phase 4 Model Information")
+    st.header("Phase 4 Model Information")
 
     col1, col2, col3 = st.columns(3)
 
@@ -107,7 +106,7 @@ elif page == "Model Information":
 # -------------------------------------------------
 elif page == "BLE Spoofing Detection":
 
-    st.header("🔍 BLE Spoofing Detection")
+    st.header("BLE Spoofing Detection")
 
     st.write(
         "Upload a CSV file containing the BLE features "
@@ -236,7 +235,7 @@ elif page == "BLE Spoofing Detection":
             # FORCE EXACT MODEL FEATURE ORDER
             # -------------------------------------------------
             X_input = X_input[model_features]
-            
+
             # -------------------------------------------------
             # DEBUG INFORMATION
             # -------------------------------------------------
@@ -249,31 +248,24 @@ elif page == "BLE Spoofing Detection":
 
             st.write("Final model features:")
 
-            st.write(
-                model_features
-            )
+            st.write(model_features)
 
             st.write("Data types:")
 
-            st.write(
-                X_input.dtypes
-            )
+            st.write(X_input.dtypes)
 
             st.write("Remaining missing values:")
 
-            st.write(
-                X_input.isnull().sum()
-            )
+            st.write(X_input.isnull().sum())
 
             # -------------------------------------------------
             # CHECK FOR REMAINING INVALID VALUES
             # -------------------------------------------------
-            
 
             # -------------------------------------------------
             # DETECTION BUTTON
             # -------------------------------------------------
-            if st.button("🚀 Detect BLE Spoofing"):
+            if st.button("Detect BLE Spoofing"):
 
                 try:
 
@@ -360,7 +352,7 @@ elif page == "BLE Spoofing Detection":
 
                     st.success(
                         "BLE spoofing detection "
-                        "completed successfully! ✅"
+                        "completed successfully!"
                     )
 
                 except Exception as e:
